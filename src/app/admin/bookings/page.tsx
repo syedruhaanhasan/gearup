@@ -11,6 +11,7 @@ type Booking = {
   startAt: string;
   endAt: string;
   status: string;
+  totalPriceCents: number;
   user: { email: string; name: string | null };
   service: { name: string; priceCents: number };
   mechanic: { name: string };
@@ -66,6 +67,7 @@ export default function AdminBookingsPage() {
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Service</th>
               <th className="px-4 py-3">Mechanic</th>
+              <th className="px-4 py-3">Total</th>
               <th className="px-4 py-3">Status</th>
             </tr>
           </thead>
@@ -100,6 +102,11 @@ export default function AdminBookingsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3">{b.mechanic.name}</td>
+                <td className="px-4 py-3">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                    {formatMoney(b.totalPriceCents)}
+                  </span>
+                </td>
                 <td className="px-4 py-3">{b.status}</td>
               </tr>
             ))}

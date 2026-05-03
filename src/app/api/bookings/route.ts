@@ -9,14 +9,12 @@ const createSchema = z.object({
   name: z.string().optional(),
   serviceId: z.string().min(1),
   startAt: z.string().datetime(),
-  parts: z
-    .array(
-      z.object({
-        partId: z.string(),
-        quantity: z.number().int().positive(),
-      }),
-    )
-    .optional(),
+  parts: z.array(
+    z.object({
+      partId: z.string(),
+      quantity: z.number().int().positive(),
+    }),
+  ).min(1, "At least one part is required"),
 });
 
 export async function GET(req: NextRequest) {
@@ -59,6 +57,7 @@ export async function POST(req: NextRequest) {
       SLOT_TAKEN: 409,
       INSUFFICIENT_STOCK: 409,
       INVALID_PART: 400,
+      PARTS_REQUIRED: 400,
     };
     const status = map[code] ?? 500;
     return NextResponse.json({ error: code }, { status });

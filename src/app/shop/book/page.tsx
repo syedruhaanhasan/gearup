@@ -79,10 +79,30 @@ export default function BookServicePage() {
       .map(([partId, quantity]) => ({ partId, quantity }));
   }, [selectedParts]);
 
+  const selectedService = useMemo(
+    () => services.find((s) => s.id === serviceId),
+    [services, serviceId],
+  );
+
+  const { laborTotal, partsTotal, grandTotal } = useMemo(() => {
+    const labor = selectedService?.priceCents ?? 0;
+    let partsSum = 0;
+    for (const [partId, qty] of Object.entries(selectedParts)) {
+      if (qty <= 0) continue;
+      const part = parts.find((p: Part) => p.id === partId);
+      if (part) partsSum += part.priceCents * qty;
+    }
+    return { laborTotal: labor, partsTotal: partsSum, grandTotal: labor + partsSum };
+  }, [selectedService, selectedParts, parts]);
+
   async function submit() {
     setStatus(null);
     if (!email || !serviceId || !selectedSlot) {
       setStatus("Email, service, and slot are required.");
+      return;
+    }
+    if (partPayload.length === 0) {
+      setStatus("Please select at least one part.");
       return;
     }
     const res = await fetch("/api/bookings", {
@@ -93,7 +113,7 @@ export default function BookServicePage() {
         name,
         serviceId,
         startAt: selectedSlot.startAt,
-        parts: partPayload.length ? partPayload : undefined,
+        parts: partPayload,
       }),
     });
     const body = (await parseResponseJson<{ error?: string }>(res)) ?? {};
@@ -197,10 +217,10 @@ export default function BookServicePage() {
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
         <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
-          Optional parts (deducts stock now)
+          Required parts
         </h3>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Only in-stock quantities are allowed on the same booking transaction.
+          Select at least one part. Only in-stock quantities are allowed on the same booking transaction.
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {parts.map((p) => (
@@ -208,10 +228,10 @@ export default function BookServicePage() {
               key={p.id}
               className="flex items-center justify-between gap-3 rounded-lg border border-zinc-100 px-3 py-2 text-sm dark:border-zinc-800"
             >
-              <span>
-                {p.name}{" "}
-                <span className="text-zinc-500">
-                  ({p.stockQuantity} on hand)
+              <span className="min-w-0">
+                <span className="block truncate">{p.name}</span>
+                <span className="block text-xs text-zinc-500">
+                  {formatMoney(p.priceCents)} · {p.stockQuantity} on hand
                 </span>
               </span>
               <input
@@ -232,13 +252,45 @@ export default function BookServicePage() {
         </div>
       </div>
 
+      {selectedService && (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+          <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
+            Booking summary
+          </h3>
+          <div className="mt-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-zinc-600 dark:text-zinc-400">
+                {selectedService.name} (labor)
+              </span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {formatMoney(laborTotal)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-600 dark:text-zinc-400">Parts</span>
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                {formatMoney(partsTotal)}
+              </span>
+            </div>
+            <div className="border-t border-zinc-200 pt-2 dark:border-zinc-800">
+              <div className="flex justify-between text-base font-semibold">
+                <span className="text-zinc-900 dark:text-zinc-50">Total</span>
+                <span className="text-zinc-900 dark:text-zinc-50">
+                  {formatMoney(grandTotal)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => void submit()}
         className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-        disabled={!email || !serviceId || !selectedSlot}
+        disabled={!email || !serviceId || !selectedSlot || partPayload.length === 0}
       >
-        Confirm booking
+        Confirm booking · {formatMoney(grandTotal)}
       </button>
 
       {status && (

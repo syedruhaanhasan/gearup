@@ -9,11 +9,15 @@ export type CreateBookingInput = {
   name?: string;
   serviceId: string;
   startAt: Date;
-  partLines?: { partId: string; quantity: number }[];
+  partLines: { partId: string; quantity: number }[];
 };
 
 export async function createBookingWithInventory(input: CreateBookingInput) {
-  const { email, name, serviceId, startAt, partLines = [] } = input;
+  const { email, name, serviceId, startAt, partLines } = input;
+
+  if (!partLines || partLines.length === 0) {
+    throw new Error("PARTS_REQUIRED");
+  }
 
   const result = await prisma.$transaction(
     async (tx) => {
@@ -67,16 +71,7 @@ export async function createBookingWithInventory(input: CreateBookingInput) {
         throw new Error("SLOT_TAKEN");
       }
 
-      const booking = await tx.booking.create({
-        data: {
-          userId: user.id,
-          serviceId,
-          mechanicId: chosen,
-          startAt,
-          endAt,
-          status: BookingStatus.CONFIRMED,
-        },
-      });
+      let partsTotalCents = 0;
 
       for (const line of partLines) {
         if (line.quantity <= 0) continue;
@@ -93,20 +88,48 @@ export async function createBookingWithInventory(input: CreateBookingInput) {
               partId: part.id,
               delta: -line.quantity,
               reason: "BOOKING_SALE",
-              bookingId: booking.id,
+              bookingId: "temp", // placeholder, will be updated after booking creation
             },
           });
-          await tx.bookingPartLine.create({
-            data: {
-              bookingId: booking.id,
-              partId: part.id,
-              quantity: line.quantity,
-              unitPriceCents: part.priceCents,
-            },
-          });
+          partsTotalCents += part.priceCents * line.quantity;
         } else {
           throw new Error("INSUFFICIENT_STOCK");
         }
+      }
+
+      const totalPriceCents = service.priceCents + partsTotalCents;
+
+      const booking = await tx.booking.create({
+        data: {
+          userId: user.id,
+          serviceId,
+          mechanicId: chosen,
+          startAt,
+          endAt,
+          status: BookingStatus.CONFIRMED,
+          totalPriceCents,
+        },
+      });
+
+      // Update ledger entries with real bookingId and create booking part lines
+      for (const line of partLines) {
+        if (line.quantity <= 0) continue;
+        const part = await tx.part.findUnique({ where: { id: line.partId } });
+        if (!part) continue;
+
+        await tx.inventoryLedger.updateMany({
+          where: { partId: part.id, reason: "BOOKING_SALE", bookingId: "temp" },
+          data: { bookingId: booking.id },
+        });
+
+        await tx.bookingPartLine.create({
+          data: {
+            bookingId: booking.id,
+            partId: part.id,
+            quantity: line.quantity,
+            unitPriceCents: part.priceCents,
+          },
+        });
       }
 
       return booking;

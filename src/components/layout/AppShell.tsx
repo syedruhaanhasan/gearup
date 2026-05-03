@@ -3,6 +3,7 @@
 import { parseResponseJson } from "@/lib/parse-response-json";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { LogoMark, NavIcon } from "@/components/layout/NavIcons";
+import { PartCompareProvider } from "@/lib/part-compare-context";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -26,6 +27,7 @@ const MAIN: NavItem[] = [{ href: "/", label: "Home" }];
 const SHOP_FRONT: NavItem[] = [
   { href: "/shop", label: "Live dashboard" },
   { href: "/shop/parts", label: "Parts catalog" },
+  { href: "/shop/parts/compare", label: "Compare parts" },
   { href: "/shop/book", label: "Book a service" },
 ];
 
@@ -427,7 +429,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div key={pathname} className="animate-gu-page flex-1">
-            {children}
+            <PartCompareProvider>{children}</PartCompareProvider>
           </div>
           <SiteFooter
             showManagementLinks={isAdmin === true}
