@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum MechanicStatus {
+  AVAILABLE
+  BUSY
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  passwordHash String?
+  role      UserRole @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings  Booking[]
+  preorders PartPreorder[]
+}
+
+model Mechanic {
+  id        String         @id @default(cuid())
+  name      String
+  status    MechanicStatus @default(AVAILABLE)
+  createdAt DateTime       @default(now())
+
+  bookings Booking[]
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  durationMinutes Int
+  priceCents      Int
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bookings Booking[]
+}
+
+/// Parts catalog + on-hand quantity; restockLeadDays drives "available in X days" when stock is 0.
+model Part {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  priceCents      Int
+  stockQuantity   Int      @default(0)
+  restockLeadDays Int      @default(2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bookingLines BookingPartLine[]
+  preorders    PartPreorder[]
+  ledger       InventoryLedger[]
+}
+
+/// Singleton shop configuration: operating hours and grid step for generated slots.
+model ShopSettings {
+  id              String @id @default("default")
+  openTime        String @default("10:00")
+  closeTime       String @default("19:00")
+  slotStepMinutes Int    @default(60)
+  timezone        String @default("UTC")
+}
+
+/// Optional per-weekday overrides; if empty, ShopSettings open/close apply to all days.
+model TimeSlotRule {
+  id          String  @id @default(cuid())
+  dayOfWeek   Int
+  openTime    String
+  closeTime   String
+  slotStepMin Int?
+  active      Boolean @default(true)
+
+  @@index([dayOfWeek])
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  userId     String
+  serviceId  String
+  mechanicId String
+  startAt    DateTime
+  endAt      DateTime
+  status     BookingStatus @default(CONFIRMED)
+  notes      String?
+  createdAt  DateTime      @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  service  Service  @relation(fields: [serviceId], references: [id])
+  mechanic Mechanic @relation(fields: [mechanicId], references: [id])
+  parts    BookingPartLine[]
+
+  @@index([mechanicId, startAt])
+  @@index([startAt, endAt])
+}
+
+model BookingPartLine {
+  id             String @id @default(cuid())
+  bookingId      String
+  partId         String
+  quantity       Int
+  unitPriceCents Int
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  part    Part    @relation(fields: [partId], references: [id])
+
+  @@index([partId])
+}
+
+model PartPreorder {
+  id         String   @id @default(cuid())
+  userId     String
+  partId     String
+  quantity   Int
+  expectedBy DateTime
+  status     String   @default("OPEN")
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  part Part @relation(fields: [partId], references: [id])
+}
+
+/// Inventory audit trail (parts deduct / adjustments).
+model InventoryLedger {
+  id        String   @id @default(cuid())
+  partId    String
+  delta     Int
+  reason    String
+  bookingId String?
+  createdAt DateTime @default(now())
+
+  part Part @relation(fields: [partId], references: [id])
+
+  @@index([partId])
+}
