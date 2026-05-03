@@ -1,8 +1,19 @@
-import {
-  BookingStatus,
-  MechanicStatus,
-  PrismaClient,
-} from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+
+// SQLite compatibility: Define enums as constants
+const BookingStatus = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  CANCELLED: "CANCELLED",
+  COMPLETED: "COMPLETED",
+} as const;
+type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus];
+
+const MechanicStatus = {
+  AVAILABLE: "AVAILABLE",
+  BUSY: "BUSY",
+} as const;
+type MechanicStatus = (typeof MechanicStatus)[keyof typeof MechanicStatus];
 import bcrypt from "bcryptjs";
 import { addDays, startOfDay } from "date-fns";
 
@@ -276,7 +287,7 @@ async function main() {
     mechanicId: string;
     startAt: Date;
     endAt: Date;
-    status: BookingStatus;
+    status: string;
   }[] = [
     {
       notes: "seed:b1",

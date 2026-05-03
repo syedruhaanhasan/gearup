@@ -1,6 +1,9 @@
+import { getSessionFromCookies } from "@/lib/auth-session";
 import Link from "next/link";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getSessionFromCookies();
+
   return (
     <main className="relative mx-auto flex min-h-full max-w-5xl flex-col gap-12 px-6 py-16 lg:gap-16 lg:py-20">
       <div className="pointer-events-none absolute left-1/2 top-0 h-64 w-[min(100%,42rem)] -translate-x-1/2 rounded-full bg-gradient-to-br from-teal-400/25 via-emerald-400/15 to-transparent blur-3xl dark:from-teal-600/20 dark:via-emerald-900/10" />
@@ -10,29 +13,33 @@ export default function HomePage() {
           Gear Up · Mechanic Shop
         </p>
         <h1 className="mt-6 max-w-3xl text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">
-          Operations and shop front,{" "}
-          <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-emerald-400">
-            tuned for real bays.
-          </span>
+          {user ? `Welcome back, ${user.name || "User"}!` : "Operations and shop front,"}{" "}
+          {!user && (
+            <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent dark:from-teal-400 dark:to-emerald-400">
+              tuned for real bays.
+            </span>
+          )}
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
           Duration-aware booking, live mechanic status, and inventory with preorder when stock
           runs dry — one cohesive workspace for staff and customers.
         </p>
-        <p className="mt-8 flex flex-wrap items-center gap-4">
-          <Link
-            href="/login"
-            className="gu-btn-primary inline-flex px-6 py-2.5 shadow-lg shadow-teal-600/25"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-xl border border-[var(--gu-sidebar-border)] bg-[var(--gu-surface)] px-5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:border-teal-400/40 hover:shadow-md dark:text-zinc-300"
-          >
-            Create account
-          </Link>
-        </p>
+        {!user && (
+          <p className="mt-8 flex flex-wrap items-center gap-4">
+            <Link
+              href="/login"
+              className="gu-btn-primary inline-flex px-6 py-2.5 shadow-lg shadow-teal-600/25"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-xl border border-[var(--gu-sidebar-border)] bg-[var(--gu-surface)] px-5 py-2.5 text-sm font-semibold text-zinc-700 shadow-sm transition hover:border-teal-400/40 hover:shadow-md dark:text-zinc-300"
+            >
+              Create account
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="relative grid gap-5 sm:grid-cols-2">

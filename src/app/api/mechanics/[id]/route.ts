@@ -1,4 +1,4 @@
-import { MechanicStatus } from "@prisma/client";
+import { MechanicStatus } from "@/lib/db-enums";
 import { NextRequest, NextResponse } from "next/server";
 import { assertAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";

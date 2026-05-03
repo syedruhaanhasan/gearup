@@ -1,4 +1,4 @@
-import { MechanicStatus } from "@prisma/client";
+import { MechanicStatus } from "@/lib/db-enums";
 import { prisma } from "@/lib/prisma";
 
 export type LiveMechanic = {

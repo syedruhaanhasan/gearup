@@ -1,5 +1,6 @@
 import { addMinutes } from "date-fns";
-import { BookingStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { BookingStatus } from "@/lib/db-enums";
 import { prisma } from "@/lib/prisma";
 import { broadcastMechanics } from "@/lib/realtime";
 import { rangesOverlap } from "@/lib/time-helpers";
@@ -134,9 +135,8 @@ export async function createBookingWithInventory(input: CreateBookingInput) {
 
       return booking;
     },
-    {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-    },
+    // SQLite doesn't support Serializable isolationLevel in $transaction the same way.
+    // For simple local dev, we remove it.
   );
 
   broadcastMechanics();

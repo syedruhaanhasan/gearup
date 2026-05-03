@@ -232,7 +232,10 @@ function AccountBlock({
         Session
       </p>
       <div className="rounded-xl border border-[var(--gu-sidebar-border)] bg-zinc-50/80 p-3 dark:bg-zinc-900/50">
-        <p className="truncate text-xs font-medium text-zinc-900 dark:text-zinc-100">
+        <p className="truncate text-xs font-semibold text-zinc-900 dark:text-zinc-50">
+          {user.name || "User account"}
+        </p>
+        <p className="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
           {user.email}
         </p>
         <span
@@ -322,15 +325,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           {authReady && me && (
-            <span
-              className={`hidden shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider sm:inline ${
-                me.role === "ADMIN"
-                  ? "bg-indigo-500/15 text-indigo-800 dark:bg-indigo-500/25 dark:text-indigo-200"
-                  : "bg-teal-500/15 text-teal-800 dark:bg-teal-500/20 dark:text-teal-200"
-              }`}
-            >
-              {me.role === "ADMIN" ? "Staff" : "Customer"}
-            </span>
+            <div className="hidden items-center gap-3 sm:flex">
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                  me.role === "ADMIN"
+                    ? "bg-indigo-500/15 text-indigo-800 dark:bg-indigo-500/25 dark:text-indigo-200"
+                    : "bg-teal-500/15 text-teal-800 dark:bg-teal-500/20 dark:text-teal-200"
+                }`}
+              >
+                {me.role === "ADMIN" ? "Staff" : "Customer"}
+              </span>
+              <span className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                {me.name || me.email}
+              </span>
+            </div>
           )}
         </div>
         <nav className="hidden items-center gap-1 md:flex" aria-label="Quick links">
